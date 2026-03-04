@@ -1,0 +1,21 @@
+name = "cf-ai-pipeline"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
+
+[ai]
+binding = "AI"
+
+[[durable_objects.bindings]]
+name = "PIPELINE_SESSION"
+class_name = "PipelineSession"
+script_name = "cf-ai-pipeline"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["PipelineSession"]
+
+[[kv_namespaces]]
+binding = "PIPELINE_KV"
+id = "YOUR_KV_NAMESPACE_ID"
+preview_id = "YOUR_KV_PREVIEW_NAMESPACE_ID"
