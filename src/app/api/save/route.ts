@@ -1,7 +1,4 @@
-export const runtime = 'edge';
-
-import { getRequestContext } from '@cloudflare/next-on-pages';
-
+// MOCK BRANCH — save is a no-op (logs to console)
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -14,14 +11,8 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    const { env } = getRequestContext();
     const { sessionId, data } = await request.json() as { sessionId: string; data: unknown };
-
-    await env.PIPELINE_KV.put(
-      'pipeline_' + sessionId,
-      JSON.stringify({ data, savedAt: Date.now() })
-    );
-
+    console.log('[MOCK] Save project for session:', sessionId, data);
     return Response.json({ ok: true }, { headers: corsHeaders });
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500, headers: corsHeaders });

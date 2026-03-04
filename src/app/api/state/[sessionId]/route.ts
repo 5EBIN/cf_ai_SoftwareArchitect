@@ -1,7 +1,5 @@
-export const runtime = 'edge';
-
-import { getRequestContext } from '@cloudflare/next-on-pages';
-import type { PipelineState } from '../../../../lib/types';
+// MOCK BRANCH — reads from in-memory session store
+import { getSession } from '../../../../lib/mockSession';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,15 +16,8 @@ export async function GET(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
-    const { env } = getRequestContext();
     const { sessionId } = await params;
-
-    const id = env.PIPELINE_SESSION.idFromName(sessionId);
-    const stub = env.PIPELINE_SESSION.get(id);
-
-    const res = await stub.fetch(new Request('https://do/get'));
-    const state = await res.json() as PipelineState;
-
+    const state = getSession(sessionId);
     return Response.json(state, { headers: corsHeaders });
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500, headers: corsHeaders });

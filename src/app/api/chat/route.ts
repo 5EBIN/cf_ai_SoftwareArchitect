@@ -1,9 +1,8 @@
-export const runtime = 'edge';
-
-import { getRequestContext } from '@cloudflare/next-on-pages';
-import { callAI } from '../../../lib/ai';
+// MOCK BRANCH — no Cloudflare bindings, runs on Node.js for local UI testing
+import { getSession, updateSession } from '../../../lib/mockSession';
+import { getMockAIResponse } from '../../../lib/mockAI';
 import { STAGE_IDS } from '../../../lib/stages';
-import type { PipelineState, StageId, ChatAPIResponse } from '../../../lib/types';
+import type { StageId, ChatAPIResponse } from '../../../lib/types';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,23 +16,10 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    const { env } = getRequestContext();
     const { message, sessionId } = await request.json() as { message: string; sessionId: string };
 
-    const id = env.PIPELINE_SESSION.idFromName(sessionId);
-    const stub = env.PIPELINE_SESSION.get(id);
-
-    const stateRes = await stub.fetch(new Request('https://do/get'));
-    const state = await stateRes.json() as PipelineState;
-
-    const recentHistory = state.history.slice(-12).map(h => ({
-      role: h.role,
-      content: h.content,
-    }));
-
-    const contextPrefix = `[Project: "${state.projectName || 'unnamed'}" | Stage: ${state.currentStage} | Completed: ${state.completedStages.join(', ') || 'none'}]`;
-
-    const aiResult = await callAI(env.AI, recentHistory, message, contextPrefix, state.currentStage);
+    const state = getSession(sessionId);
+    const aiResult = getMockAIResponse(state.currentStage, message);
 
     let newStage: StageId = state.currentStage;
     let completedStages = [...state.completedStages];
@@ -50,17 +36,13 @@ export async function POST(request: Request) {
       projectName = message.slice(0, 60);
     }
 
-    await stub.fetch(new Request('https://do/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userMessage: message,
-        assistantMessage: aiResult.reply,
-        currentStage: newStage,
-        projectName,
-        completedStages,
-      }),
-    }));
+    updateSession(sessionId, {
+      userMessage: message,
+      assistantMessage: aiResult.reply,
+      currentStage: newStage,
+      projectName,
+      completedStages,
+    });
 
     const response: ChatAPIResponse = {
       ...aiResult,

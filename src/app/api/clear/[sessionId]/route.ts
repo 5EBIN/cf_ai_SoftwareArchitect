@@ -1,6 +1,5 @@
-export const runtime = 'edge';
-
-import { getRequestContext } from '@cloudflare/next-on-pages';
+// MOCK BRANCH — clears in-memory session store
+import { clearSession } from '../../../../lib/mockSession';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,14 +16,8 @@ export async function POST(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
-    const { env } = getRequestContext();
     const { sessionId } = await params;
-
-    const id = env.PIPELINE_SESSION.idFromName(sessionId);
-    const stub = env.PIPELINE_SESSION.get(id);
-
-    await stub.fetch(new Request('https://do/clear', { method: 'POST' }));
-
+    clearSession(sessionId);
     return Response.json({ ok: true }, { headers: corsHeaders });
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500, headers: corsHeaders });
